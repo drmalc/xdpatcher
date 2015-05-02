@@ -70,14 +70,6 @@ namespace xdPatcher
             btStop.Enabled = false;
             btApplyStop.Enabled = false;
             tabControl.SelectedIndex = 0;
-
-            /*textBoxOldPath.Text = @"F:\steam-bup\BorderlandsPreSequel-v1.0.5";
-            textBoxNewPath.Text = @"F:\steam-bup\BorderlandsPreSequel-v1.0.3";
-            textBoxTargetPath.Text = @"K:\test";
-
-            textBoxApplyPatch.Text = @"K:\test\BorderlandsPreSequel-v1.0.5.xdpatch";
-            textBoxApplyOld.Text = @"F:\steam-bup\BorderlandsPreSequel-v1.0.5";
-            textBoxApplyTarget.Text = @"K:\test";*/
         }
 
         private void Form1_BrowseButtonClicked(object sender, EventArgs e)
