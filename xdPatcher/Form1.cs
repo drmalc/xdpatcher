@@ -67,8 +67,7 @@ namespace xdPatcher
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            btStop.Enabled = false;
-            btApplyStop.Enabled = false;
+            restoreButtonsStatus();
             tabControl.SelectedIndex = 0;
         }
 
@@ -153,12 +152,15 @@ namespace xdPatcher
             }));
         }
 
-        private void runXdelta(string oldFile, string newFile, string targetDir)
+        private void runXdelta(string oldFile, string newFile, string targetDir, bool isEmptyFile)
         {
-
             logTextBox.AppendText("Now creating delta for: " + newFile.Replace(newPath, "") + Environment.NewLine);
 
             string deltaPath = targetDir + Path.DirectorySeparatorChar + Path.GetFileName(newFile) + ".delta";
+            if (isEmptyFile)
+            {
+                deltaPath += "copy";
+            }
             string oldP = oldFile;
             string newP = newFile;
 
@@ -221,6 +223,14 @@ namespace xdPatcher
             }
         }
 
+        private void restoreButtonsStatus()
+        {
+            btCreatePatch.Enabled = true;
+            btStop.Enabled = false;
+            btApplyStop.Enabled = false;
+            btApplyPatch.Enabled = true;
+        }
+
         private void patchNextFile()
         {
             progressBar.Value++;
@@ -261,7 +271,7 @@ namespace xdPatcher
                 }
             }
 
-            runXdelta(array[0], array[1], where);
+            runXdelta(array[0], array[1], where, array[3]=="empty");
         }
         
         private void applyPatchForNextFile()
@@ -302,10 +312,7 @@ namespace xdPatcher
                         );
                 if (r == DialogResult.Cancel)
                 {
-                    btCreatePatch.Enabled = true;
-                    btStop.Enabled = false;
-                    btApplyStop.Enabled = false;
-                    btApplyPatch.Enabled = true;
+                    restoreButtonsStatus();
                     return;
                 }
             }
@@ -314,23 +321,48 @@ namespace xdPatcher
 
             int notFoundCount = 0;
 
-            IEnumerable<string> patchDirEnum = Directory.EnumerateFiles(xdpPath, "*.delta", SearchOption.AllDirectories);
+            IEnumerable<string> patchDirEnum = Directory.EnumerateFiles(xdpPath, "*.delta*", SearchOption.AllDirectories);
             foreach (string file in patchDirEnum)
             {
-                string pathInOrigDir = file.Replace(xdpPath, origPath);
-                pathInOrigDir = pathInOrigDir.Substring(0, pathInOrigDir.Length - 6);
+                if (file.EndsWith("delta"))
+                {
+                    string pathInOrigDir = file.Replace(xdpPath, origPath);
+                    pathInOrigDir = pathInOrigDir.Substring(0, pathInOrigDir.Length - 6);
 
-                if (!File.Exists(pathInOrigDir))
-                {
-                    notFoundCount++;
-                    logTextBox.AppendText("Error file not found: " + pathInOrigDir + Environment.NewLine);
+                    if (!File.Exists(pathInOrigDir))
+                    {
+                        notFoundCount++;
+                        logTextBox.AppendText("Error file not found: " + pathInOrigDir + Environment.NewLine);
+                    }
+                    else
+                    {
+                        string parent = Path.GetDirectoryName(file);
+                        string targetFile = targetPath + Path.DirectorySeparatorChar + parent.Replace(xdpPath, "");
+                        string[] array = new string[3];
+                        array[0] = pathInOrigDir;
+                        array[1] = file;
+                        array[2] = targetFile;
+                        origFilesToPatch.Add(array);
+                    }
                 }
-                else
+                else if (file.EndsWith("deltacopy"))
                 {
+                    string filename = Path.GetFileName(file);
+                    filename = filename.Substring(0, filename.Length - 10);
                     string parent = Path.GetDirectoryName(file);
                     string targetFile = targetPath + Path.DirectorySeparatorChar + parent.Replace(xdpPath, "");
+                    string tempDir = targetPath + Path.DirectorySeparatorChar + "delta.temp" + Path.DirectorySeparatorChar;
+                    string emptFile = tempDir + filename;
+
+                    if (!Directory.Exists(tempDir))
+                    {
+                        Directory.CreateDirectory(tempDir);
+                    }
+                    FileStream f = File.Create(emptFile);
+                    f.Close();
+
                     string[] array = new string[3];
-                    array[0] = pathInOrigDir;
+                    array[0] = emptFile;
                     array[1] = file;
                     array[2] = targetFile;
                     origFilesToPatch.Add(array);
@@ -346,7 +378,10 @@ namespace xdPatcher
                     MessageBoxIcon.Warning
                     );
                 if (r == DialogResult.Cancel)
+                {
+                    restoreButtonsStatus();
                     return;
+                }
             }
 
             progressBar.Maximum = 1 + origFilesToPatch.Count;
@@ -412,19 +447,21 @@ namespace xdPatcher
                 if (File.Exists(pathInOldDir))
                 {
                     //file is present in both versions
-                    string[] array = new string[3];
+                    string[] array = new string[4];
                     array[0] = pathInOldDir;
                     array[1] = file;
                     array[2] = relDirPath;
+                    array[3] = "";
                     filesToPatch.Add(array);
                 }
                 else
                 {
                     //file exists only in the new version
-                    string[] array = new string[3];
+                    string[] array = new string[4];
                     array[0] = emptyFilePath;
                     array[1] = file;
                     array[2] = relDirPath;
+                    array[3] = "empty";
                     filesToCopy.Add(array);
                     filesToPatch.Add(array); //files will be compared against an empty file.
                 }
