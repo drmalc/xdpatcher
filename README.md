@@ -6,4 +6,4 @@ xdelta:
 https://github.com/jmacd/xdelta
 
 binaries:
-https://mega.co.nz/#!yc10UZxI!k-kHJkDwORvQIMTQtEahoTpK5IISCzaKnfgLwv32QG0
+https://mega.co.nz/#!eN9xlJrB!aqumdHAqCjQhb1bbTaF0eRir3_emfO7aTxRySsqo9vc
